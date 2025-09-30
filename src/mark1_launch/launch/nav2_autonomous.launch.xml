@@ -1,0 +1,132 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- Arguments -->
+    <arg name="use_sim_time" default="false"/>
+    <!-- path params using share and package reference-->
+    <!-- <arg name="map" default="$(find-pkg-share mark1_launch)/maps/my_map.yaml"/> -->
+    <!-- <arg name="params_file" default="$(find-pkg-share mark1_launch)/config/nav2_params.yaml"/> -->
+
+    <!--params as the absolute paths-->
+    <arg name="params_file" default="/mnt/ssd/dev/sensors_ws/src/mark1_launch/config/nav2_params.yaml"/>
+    <!-- <arg name="map" default="/mnt/ssd/dev/sensors_ws/src/mark1_launch/maps/my_map.yaml"/> -->
+
+    <!-- Define path variables -->
+    <let name="urdf_path" value="$(find-pkg-share mark1_description)/urdf/my_robot.urdf.xacro"/>
+    
+    <!-- Start robot_state_publisher -->
+    <node pkg="robot_state_publisher" exec="robot_state_publisher" name="robot_state_publisher">
+        <param name="robot_description" value="$(command 'xacro $(var urdf_path)')"/>
+        <param name="publish_frequency" value="30.0"/>
+        <param name="use_sim_time" value="$(var use_sim_time)"/>
+    </node>
+    
+    <!-- commenting the static transformer because we are not using base footprint anymore, directly using base_link-->
+    <!-- Static transform from base_link to base_footprint -->
+    <!-- <node pkg="tf2_ros" exec="static_transform_publisher" name="base_footprint_to_base_link"
+      args="0 0 0 0 0 0 base_footprint base_link"/> -->
+
+      <!-- changing the output frame to base_link from camera_depth_optical_frame-->
+
+    <node pkg="depthimage_to_laserscan" exec="depthimage_to_laserscan_node" name="d2l">
+        <remap from="depth"              to="/camera/depth/image_raw"/>
+        <remap from="depth_camera_info"  to="/camera/depth/camera_info"/>
+        <remap from="scan"               to="/scan"/>
+        <!-- Tune these to your camera and room size -->
+        <param name="range_min" value="0.3"/>
+        <param name="range_max" value="2.2"/>
+        <!-- Use a fixed frame from your URDF (e.g., camera_link or camera_depth_optical_frame) -->
+        <param name="output_frame_id" value="base_link"/>
+        <param name="output_frame" value="base_link"/>
+
+        <param name="qos_data" value="sensor_data"/>
+
+    </node>
+        
+    <!-- RTABMap Visual Odometry to provide odom frame -->
+    <include file="$(find-pkg-share rtabmap_launch)/launch/rtabmap.launch.py">
+        <!-- General parameters -->
+        <arg name="frame_id" value="base_link"/>
+        
+        <!-- RGB-D settings -->
+        <arg name="rgb_topic" value="/camera/color/image_raw"/>
+        <arg name="camera_info_topic" value="/camera/color/camera_info"/>
+        <arg name="depth_topic" value="/camera/depth/image_raw"/>
+        <arg name="depth_registered" value="true"/>
+
+        <!-- to compute immediately without any delay-->
+        <arg name="odom_sensor_sync" value="true"/>
+
+
+        <!-- increasing the sync window capacity -->
+        <arg name="approx_sync" value="true"/>
+        <arg name="approx_sync_max_interval" value="0.03"/>
+        <arg name="queue_size" value="5"/>
+        <arg name="topic_queue_size" value="5"/>
+        <arg name="sync_queue_size" value="5"/>
+        
+        <!-- Enable ONLY visual odometry (not SLAM) -->
+        <arg name="visual_odometry" value="true"/>
+        <arg name="icp_odometry" value="false"/>
+        <arg name="odom_frame_id" value="odom"/>
+        <arg name="subscribe_odom_info" value="true"/>
+
+        <arg name="publish_tf_ros" value="true"/> <!-- to ensure transforms are published through ros2 tf system-->
+        <arg name="tf_delay" value="0.0"/> <!-- long to wait before publishing the tf-->
+        <arg name="use_action_for_goal" value="true"/>
+        
+        <!-- Disable SLAM mapping since you already have a map -->
+        <arg name="rtabmap_args" value="--Mem/IncrementalMemory false --Mem/InitWMWithAllNodes true"/>
+
+        <!-- dont publish any tf as we will be using EKF (fusion of Visual odometry and IMU) to publish the odom tf -->
+        <arg name="publish_tf" value="false"/>
+
+    </include>
+
+    <node pkg="robot_localization" exec="ekf_node" name="ekf_odom" output="screen">
+        <param from="$(find-pkg-share mark1_launch)/config/ekf_odom.yaml" />
+    </node>
+    
+   <!-- <timer period="3.0">
+    <include file="$(find-pkg-share nav2_bringup)/launch/localization_launch.py">
+            <arg name="use_sim_time" value="$(var use_sim_time)"/>
+            <arg name="map" value="$(var map)"/>
+            <arg name="params_file" value="$(var params_file)"/>
+            <arg name="autostart" value="true"/>
+    </include>
+   </timer> -->
+   <timer period="3.0">
+    <!-- <include file="/mnt/ssd/dev/sensors_ws/src/mark1_launch/launch/localization.launch.xml"/> -->
+    <include file="$(find-pkg-share mark1_launch)/launch/localization.launch.xml"/>
+   </timer>
+
+    <!-- <timer period="6.0">
+        <include file="$(find-pkg-share nav2_bringup)/launch/navigation_launch.py">
+            <arg name="use_sim_time" value="$(var use_sim_time)"/>
+            <arg name="params_file" value="$(var params_file)"/>
+            <arg name="autostart" value="true"/>
+        </include>
+    </timer> -->
+
+    <!-- using a seperate launch file locally instead of nav2 bringup, a local file to execute from scratch-->
+    <timer period="6.0">
+        <include file="$(find-pkg-share mark1_launch)/launch/navigation.launch.xml"/>
+    </timer>
+
+    <!-- commented life cycle manager code, as navigation_launch already launches this life cycle manager node-->
+
+    <!-- <node pkg="nav2_lifecycle_manager" exec="lifecycle_manager" name="lifecycle_manager_localization" output="screen">
+        <param name="autostart" value="true"/>
+        <param name="node_names" value="['map_server','amcl']"/>
+    </node> -->
+
+    <!-- Note: Using existing control.py with debug logging enabled -->
+    <!-- Motor driver commands will be logged but not sent to hardware -->
+
+    <!-- RViz for visualization -->
+    <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen">
+        <param name="use_sim_time" value="$(var use_sim_time)"/>
+        <param name="rviz_config_file" value="$(find-pkg-share nav2_bringup)/rviz/nav2_default_view.rviz"/>
+    </node>
+
+</launch>

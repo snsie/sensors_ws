@@ -1,0 +1,40 @@
+ekf_filter_node:
+  ros__parameters:
+    sensor_timeout: 0.2
+    odom0_queue_size: 10
+    imu0_queue_size: 50
+    frequency: 50.0
+    two_d_mode: true
+    predict_to_current_time: false          # publish TF at the filter time, not 'now'
+    transform_time_offset: -0.10           # shift TF stamp 100 ms into the past
+    transform_timeout: 0.5                 # OK to wait up to 0.5 s for TF in lookups
+
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: base_link
+    world_frame: odom
+    publish_tf: true
+
+    # RTAB-Map VO odometry topic (check exact name in your graph; common ones: /odom, /rtabmap/odom)
+    # we disbale rtabmap VO and publishing the VO, to combine with IMU
+    odom0: /rtabmap/odom
+    odom0_differential: false
+    odom0_relative: false
+    # Use x, y, yaw and their velocities
+    odom0_config: [ true,  true,  false,
+                    false, false, true,
+                    true,  true,  false,
+                    false, false, false,
+                    false, false, false ]
+
+    # IMU fused for orientation + angular velocity; remove gravity
+    imu0: /camera/gyro_accel/sample
+    imu0_differential: false
+    imu0_relative: false
+    imu0_remove_gravitational_acceleration: true
+    # Use roll, pitch, yaw, and angular velocities; ignore positions
+    imu0_config: [ false, false, false,
+                   true,  true,  true,
+                   false, false, false,
+                   true,  true,  true,
+                   false, false, false ]

@@ -1,0 +1,8 @@
+{
+    "files.watcherExclude": {
+        "**/build/**": true,
+        "**/install/**": true,
+        "**/log/**": true,
+        "**/Log/**": true
+    }
+}

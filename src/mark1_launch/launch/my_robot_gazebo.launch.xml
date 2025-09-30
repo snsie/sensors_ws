@@ -1,0 +1,59 @@
+<launch>
+    <!-- Define path variables -->
+    <let name="urdf_path" value="$(find-pkg-share mark1_description)/urdf/my_robot.urdf.xacro"/>
+    <let name="rviz_config_path" value="$(find-pkg-share mark1_description)/rviz/rviz_config.rviz"/>
+    <let name="gazebo_config_path" value="$(find-pkg-share mark1_launch)/config/gazebo_bridge.yaml"/>
+    <let name="hospital_world_path" value="$(find-pkg-share mark1_launch)/worlds/hospital_world.sdf"/>
+    
+    <!-- Start Gazebo with hospital world and reset flag -->
+    <include file="$(find-pkg-share ros_gz_sim)/launch/gz_sim.launch.py">
+        <arg name="gz_args" value="$(var hospital_world_path) -r"/>
+    </include>
+
+    <!-- Add a delay to ensure Gazebo is fully initialized -->
+    <!--<executable cmd="bash -c 'sleep 5'" output="screen"/>-->
+
+    <node pkg="tf2_ros" exec="static_transform_publisher" name="static_tf_lidar" 
+        args="0 0 0 0 0 0 base_scan mark1/base_footprint/plusar_lidar"/>
+
+    <!-- Start robot_state_publisher -->
+    <node pkg="robot_state_publisher" exec="robot_state_publisher" name="robot_state_publisher">
+        <param name="robot_description" value="$(command 'xacro $(var urdf_path)')"/>
+        <param name="publish_frequency" value="100.0"/>
+        <param name="use_sim_time" value="true"/>
+    </node>
+
+    <!-- Add another delay before spawning the robot -->
+    <!--<executable cmd="bash -c 'sleep 2'" output="screen"/>-->
+    
+    <!-- Spawn the robot with a unique name -->
+    <node pkg="ros_gz_sim" exec="create" name="spawn_robot" output="screen" 
+          args="-topic robot_description -name mark1 -x -7.0 -y 0.0 -z 0.2 -Y 0">
+        <param name="spawn_delay" value="5.0"/>
+        <param name="use_sim_time" value="true"/>
+    </node>
+
+    <!-- Wait for robot to spawn before starting bridge -->
+    <!--<executable cmd="bash -c 'sleep 5'" output="screen"/>-->
+    
+    <!-- Start the ROS-Gazebo bridge -->
+    <node pkg="ros_gz_bridge" exec="parameter_bridge" name="ros_gz_bridge">
+        <param name="config_file" value="$(var gazebo_config_path)"/>
+        <param name="use_sim_time" value="true"/>
+    </node>
+
+    <!-- Launch RViz for visualization -->
+    <node pkg="rviz2" exec="rviz2" name="rviz2" args="-d $(var rviz_config_path)">
+        <param name="use_sim_time" value="true"/>
+    </node>
+
+
+    <!--slam tool-->
+    <node pkg="slam_toolbox" exec="sync_slam_toolbox_node" name="slam_toolbox" output="screen">
+        <param name="use_sim_time" value="true"/>
+        <param name="odom_frame" value="odom"/>
+        <param name="base_frame" value="base_footprint"/>
+        <param name="scan_topic" value="/scan"/>
+    </node>
+    
+</launch>

@@ -1,0 +1,88 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <!-- dToF LiDAR Pulsar SL450 Properties -->
+    <xacro:property name="lidar_length" value="0.12"/>
+    <xacro:property name="lidar_width" value="0.08"/>
+    <xacro:property name="lidar_height" value="0.06"/>
+    <xacro:property name="lidar_weight" value="0.45"/>
+
+    <!-- LiDAR Link -->
+    <link name="scan">
+        <visual>
+            <geometry>
+                <box size="${lidar_length} ${lidar_width} ${lidar_height}" />
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <material name="blue" />
+        </visual>
+        <collision>
+            <geometry>
+                <box size="${lidar_length} ${lidar_width} ${lidar_height}" />
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </collision>
+        <xacro:box_inertia m="${lidar_weight}" x="${lidar_length}" y="${lidar_width}" z="${lidar_height}"
+                           o_xyz="0 0 0" o_rpy="0 0 0" />
+    </link>
+
+    <!-- Joint connecting LiDAR to base_scan frame -->
+    <joint name="base_scan_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="scan"/>
+        <origin xyz="${(base_length/2)-(lidar_length/2)} 0 ${base_height+(lidar_height/2)}" rpy="0 0 0"/>
+    </joint>
+
+    <!-- <link name="pulsar_lidar"/>
+    <joint name="pulsar_lidar_joint" type="fixed">
+        <parent link="base_scan"/>
+        <child link="pulsar_lidar"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint> -->
+
+    <!-- Gazebo LiDAR Sensor Configuration -->
+    <gazebo reference="scan">
+        <sensor type="gpu_lidar" name="scan">
+        <!--<topic>/scan</topic>-->
+            <update_rate>10</update_rate>
+            <lidar>
+                <!-- Single-line LiDAR specifications -->
+                <scan>
+                    <horizontal>
+                        <samples>360</samples>
+                        <resolution>1.0</resolution>
+                        <min_angle>-3.14159</min_angle>
+                        <max_angle>3.14159</max_angle>
+                    </horizontal>
+                    <vertical>
+                        <samples>1</samples>
+                        <resolution>1.0</resolution>
+                        <min_angle>0</min_angle>
+                        <max_angle>0</max_angle>
+                    </vertical>
+                </scan>
+                <!-- dToF specifications for Pulsar SL450 -->
+                <range>
+                    <min>0.15</min>  <!-- 15cm minimum range -->
+                    <max>30.0</max>  <!-- 30m maximum range typical for SL450 -->
+                    <resolution>0.01</resolution>
+                </range>
+                <!-- Noise characteristics -->
+                <noise>
+                    <type>gaussian</type>
+                    <mean>0.0</mean>
+                    <stddev>0.02</stddev>  <!-- 2cm standard deviation -->
+                </noise>
+            </lidar>
+            <alwaysOn>1</alwaysOn>
+            <visualize>true</visualize>
+            
+            <!-- LiDAR Plugin -->
+            <!--<plugin filename="gz-sim-lidar-system" name="ignition::gazebo::systems::Lidar">
+                <topic>/scan</topic>
+                <frame_name>lidar_link</frame_name>
+            </plugin>-->
+        </sensor>
+    </gazebo>
+
+</robot>

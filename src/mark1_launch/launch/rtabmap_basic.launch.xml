@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Define path variables -->
+    <let name="urdf_path" value="$(find-pkg-share mark1_description)/urdf/my_robot.urdf.xacro"/>
+    
+    <!-- Start robot_state_publisher -->
+    <node pkg="robot_state_publisher" exec="robot_state_publisher" name="robot_state_publisher">
+        <param name="robot_description" value="$(command 'xacro $(var urdf_path)')"/>
+        <param name="publish_frequency" value="30.0"/>
+    </node>
+    
+    <!-- Add static transform publisher to connect odom and base_link initially -->
+    <!--REMOVING STTASIC LINK FROM ODOM TO BASE LINK-->
+    <!-- <node pkg="tf2_ros" exec="static_transform_publisher" name="odom_to_base_link" 
+          args="0 0 0 0 0 0 odom base_footprint"/>
+     -->
+
+    <!-- removing this as we removed basefootprint entirly from urdf-->
+    <!--adding a static frame from base link to base footprint-->
+    <!-- <node pkg="tf2_ros" exec="static_transform_publisher" name="base_link_to_base_footprint"
+      args="0 0 0 0 0 0 base_link base_footprint"/> -->
+
+    <!-- adding tf server to increase the cache size -->
+    <node pkg="tf2_ros" exec="buffer_server" name="tf2_buffer_server">
+     <param name="buffer_size" value="120.0"/>
+   </node>
+
+    <!-- Include RTAB-Map launch file -->
+    <include file="$(find-pkg-share rtabmap_launch)/launch/rtabmap.launch.py">
+        <!-- General parameters -->
+        <arg name="database_path" value="~/.ros/rtabmap.db"/>
+        <arg name="frame_id" value="base_link"/>
+        
+        <!-- RGB-D settings -->
+        <arg name="rgb_topic" value="/camera/color/image_raw"/>
+        <arg name="camera_info_topic" value="/camera/color/camera_info"/>
+        <arg name="depth_topic" value="/camera/depth/image_raw"/>
+        <arg name="depth_registered" value="true"/>
+        
+        <!-- Use approximate synchronization with queue sizes -->
+        <arg name="approx_sync" value="true"/>
+        <arg name="approx_sync_max_interval" value="0.03"/>
+        <arg name="queue_size" value="5"/>
+        <arg name="topic_queue_size" value="5"/>
+        <arg name="sync_queue_size" value="5"/>
+        
+        <!-- Enable visual odometry (Solution 1) -->
+        <arg name="visual_odometry" value="true"/>
+        <arg name="icp_odometry" value="false"/>
+        <arg name="odom_frame_id" value="odom"/>
+        <arg name="subscribe_odom_info" value="true"/>
+
+        <!-- to enable immediate computation without delay-->
+        <arg name="odom_sensor_sync" value="true"/>
+
+
+        <arg name="publish_tf_ros" value="true"/>
+        <arg name="tf_delay" value="0.0"/>
+        <arg name="use_action_for_goal" value="true"/>
+
+        <arg name="rtabmap_args" value="
+            --delete_db_on_start
+            --Grid/FromDepth true
+            --Grid/RayTracing true
+            --Grid/MaxObstacleHeight 2.1
+            --Grid/MinObstacleHeight 0.0
+            --Grid/MaxGroundAngle 45.0
+            --Grid/CellSize 0.05
+            "/>
+        <!--COMMENTING THE BELOW AS THEY ARE NOT NECESSARY, GRID TOPIC IS DIRECTLY GETTING PUBLISHED-->
+        <!-- arguments to get the 2D occupancy grid-->
+        <!-- <arg name="publish_2d_map" value="true"/>
+        <arg name="grid_cell_size" value="0.05"/>
+        <arg name="grid_depth_max" value="3.0"/>
+        <arg name="grid_depth_min" value="0.10"/>
+        <arg name="grid_max_obstacle_height" value="0.25"/>
+        <arg name="grid_max_ground_height" value="0.08"/>
+        <arg name="grid_noise_filtering_radius" value="0.1"/>
+        <arg name="grid_erode_size" value="2"/> -->
+        
+    </include>
+    
+    <!-- Launch RViz -->
+    <node pkg="rviz2" exec="rviz2" name="rviz2">
+        <param name="use_sim_time" value="false"/>
+    </node>
+</launch>
