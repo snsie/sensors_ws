@@ -66,16 +66,20 @@ tmux new-session -d -s "$SESSION_NAME" -n "roslaunches" \
 tmux split-window -v -t "$SESSION_NAME:0" \
   "bash -lc '$(launch_cmd lidar "ros2 launch orbbec_lidar_ros2 single_line.launch.py")'"
 
-# Split to third pane (slam)
+# Split to third pane (visual odometry)
+tmux split-window -v -t "$SESSION_NAME:0" \
+  "bash -lc '$(launch_cmd visual_odom "ros2 launch mark1_launch visual_odometry.launch.xml")'"
+
+# Split to fourth pane (slam + ekf + robot state)
 tmux split-window -v -t "$SESSION_NAME:0" \
   "bash -lc '$(launch_cmd slam "ros2 launch mark1_launch imu_lidar_slam.launch.xml")'"
 
-# Split to fourth pane (empty, but sourced)
-tmux split-window -v -t "$SESSION_NAME:0" \
-    "bash -lc 'set +u; source /opt/ros/$ROS_DISTRO/setup.bash >/dev/null 2>&1 || true; source \"$WS_SETUP\"; set -u; exec bash'"
+# Split to fifth pane (empty, but sourced)
+# tmux split-window -v -t "$SESSION_NAME:0" \
+#     "bash -lc 'set +u; source /opt/ros/$ROS_DISTRO/setup.bash >/dev/null 2>&1 || true; source \"$WS_SETUP\"; set -u; exec bash'"
 
 # Arrange panes evenly
 tmux select-layout -t "$SESSION_NAME:0" tiled
 
-# Attach
+# Attacho
 tmux attach -t "$SESSION_NAME"

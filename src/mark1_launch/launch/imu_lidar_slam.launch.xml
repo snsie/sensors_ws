@@ -3,7 +3,7 @@
   <!-- Arguments -->
   <arg name="use_sim_time" default="false"/>
   <arg name="slam_params_file" default="$(find-pkg-share mark1_launch)/config/mapper_params_online_async.yaml"/>
-  <arg name="imu_ekf_params_file" default="$(find-pkg-share mark1_launch)/config/imu_ekf_params.yaml"/>
+  <arg name="imu_ekf_params_file" default="$(find-pkg-share mark1_launch)/config/ekf.yaml"/>
   
   <!-- Define path variables -->
   <let name="urdf_path" value="$(find-pkg-share mark1_description)/urdf/my_robot.urdf.xacro"/>
@@ -14,28 +14,30 @@
     <param name="publish_frequency" value="30.0"/>
     <param name="use_sim_time" value="$(var use_sim_time)"/>
   </node>
-  
+
   <!-- Create a /scan topic from your lidar -->
   <node pkg="topic_tools" exec="relay" name="lidar_relay"
         args="/orbbec_lidar/orbbec_lidar/scan /scan" output="screen"/>
   
-  <!-- IMU to Odometry using robot_localization -->
+  <!-- IMU + Visual Odometry fusion using robot_localization -->
   <node pkg="robot_localization" exec="ekf_node" name="ekf_imu_node" output="screen">
     <param from="$(var imu_ekf_params_file)"/>
     <param name="use_sim_time" value="$(var use_sim_time)"/>
+    <!-- Remap topics -->
+    <remap from="odometry/filtered" to="/odometry/filtered"/>
+    <remap from="/tf" to="/tf"/>
+    <remap from="/tf_static" to="/tf_static"/>
   </node>
 
-  <!-- <node pkg="topic_tools" exec="throttle" name="scan_throttle">
-    <param name="input_topic" value="/scan"/>
-    <param name="output_topic" value="/scan_throttled"/>
-    <param name="frequency" value="3.0"/> 
-</node> -->
-  
-  <!-- SLAM Toolbox for lidar-based SLAM -->
+  <!-- SLAM Toolbox for 2D LiDAR mapping only -->
   <node pkg="slam_toolbox" exec="async_slam_toolbox_node" name="slam_toolbox" output="screen">
-    <!-- Load parameters -->
-    <param from="$(var slam_params_file)"/>
+    <param from="$(find-pkg-share mark1_launch)/config/mapper_params_online_async.yaml"/>
     <param name="use_sim_time" value="$(var use_sim_time)"/>
+    
+    <!-- Remap topics -->
+    <remap from="/scan" to="/scan"/>
+    <remap from="/tf" to="/tf"/>
+    <remap from="/tf_static" to="/tf_static"/>
   </node>
 
   <!-- RViz for visualization -->

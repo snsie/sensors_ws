@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Visual Odometry ONLY using RTAB-Map -->
+  <node pkg="rtabmap_odom" exec="rgbd_odometry" name="visual_odometry" output="screen">
+    
+    <!-- Camera topics -->
+    <remap from="rgb/image" to="/camera/color/image_raw"/>
+    <remap from="depth/image" to="/camera/depth/image_raw"/>
+    <remap from="rgb/camera_info" to="/camera/color/camera_info"/>
+    
+    <!-- Output -->
+    <remap from="odom" to="/rtabmap/odom"/>
+    
+    <!-- Basic configuration -->
+    <param name="frame_id" value="base_link"/>
+    <param name="odom_frame_id" value="odom"/>
+    <param name="publish_tf" value="false"/>
+    <param name="approx_sync" value="false"/>
+    <param name="queue_size" value="10"/>
+    
+  </node>
+</launch>

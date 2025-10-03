@@ -3,6 +3,9 @@
         "**/build/**": true,
         "**/install/**": true,
         "**/log/**": true,
-        "**/Log/**": true
+        "**/Log/**": true,
+        "**/orbbec_lidar_msgs/**": true,
+        "**/orbbec_lidar_ros2/**": true,
+        "**/OrbbecSDK_ROS2/**": true,
     }
 }
