@@ -53,8 +53,9 @@
         <!-- to enable immediate computation without delay-->
         <arg name="odom_sensor_sync" value="true"/>
 
-
-        <arg name="publish_tf_ros" value="true"/>
+        <arg name="publish_tf_ros" value="false"/>
+        <!--frames from urdf, use odometry-->
+        <!-- <arg name="publish_tf_ros" value="true"/> -->
         <arg name="tf_delay" value="0.0"/>
         <arg name="use_action_for_goal" value="true"/>
 

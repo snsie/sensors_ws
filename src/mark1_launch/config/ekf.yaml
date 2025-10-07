@@ -1,52 +1,141 @@
-ekf_imu_node: #this file is for VO+IMU used for 2D lidar mapping
+ekf_imu_node:
   ros__parameters:
+    ############################
+    # Filter / Frames
+    ############################
     frequency: 30.0
-    sensor_timeout: 0.5
+    sensor_timeout: 0.50
     two_d_mode: true
+
     publish_tf: true
     publish_acceleration: false
-    
-    # IMU sensor configuration
-    imu0: /camera/gyro_accel/sample
-    imu0_config: [false, false, false,    # x, y, z position
-                  false, false, true,     # roll, pitch, yaw orientation
-                  false, false, false,    # x, y, z velocity
-                  false, false, true,     # roll, pitch, yaw velocity
-                  true,  true,  false]    # x, y, z acceleration
-    imu0_differential: false
-    imu0_relative: false
-    imu0_queue_size: 10
-    
-    # Visual odometry configuration
-    odom0: /rtabmap/odom
-    odom0_config: [true,  true,  false,   # x, y, z position
-                   false, false, true,    # roll, pitch, yaw orientation  
-                   true,  true,  false,   # x, y, z velocity
-                   false, false, true,    # roll, pitch, yaw velocity
-                   false, false, false]   # x, y, z acceleration
-    odom0_differential: false
-    odom0_relative: false
-    odom0_queue_size: 10
-    
-    # Frame configuration
+
     map_frame: map
     odom_frame: odom
     base_link_frame: base_link
     world_frame: odom
+
+    # Timing hygiene
+    predict_to_current_time: false
+    smooth_lagged_data: true
+    reset_on_time_jump: true
+
+    ############################
+    # IMU (yaw only for 2D)
+    ############################
+    imu0: /camera/gyro_accel/sample
+    imu0_queue_size: 10
+    imu0_nodelay: true
+    imu0_differential: false
+    imu0_relative: false
+    imu0_remove_gravitational_acceleration: true
+
+    #                x     y     z     roll  pitch yaw    vx    vy    vz    vroll vpitch vyaw   ax    ay    az
+    imu0_config:   [false,false,false, false,false,true, false,false,false, false,false,true,  false,false,false]
+
+    ############################
+    # Visual Odometry (RTAB-Map)
+    ############################
+    odom0: /rtabmap/odom
+    odom0_queue_size: 10
+    odom0_nodelay: true
+    odom0_differential: true     # <-- key to avoid absolute-pose bias
+    odom0_relative: false
+
+    # Fuse x,y position + x,y velocity + yaw (orientation & yaw rate)
+    #                x     y     z     roll  pitch yaw    vx    vy    vz    vroll vpitch vyaw   ax    ay    az
+    odom0_config:  [true, true, false, false,false,true, true, true, false, false,false,true,  false,false,false]
+
+    ############################
+    # Process Noise (q) – moderate, 2D tuned
+    ############################
+    # State order:
+    # [x, y, z, roll, pitch, yaw,  vx, vy, vz,  vroll, vpitch, vyaw,  ax, ay, az]
+    process_noise_covariance: [0.001, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                               0.0,    0.001, 0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                               0.0,    0.0,    0.001, 0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                               0.0,    0.0,    0.0,    0.001, 0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                               0.0,    0.0,    0.0,    0.0,    0.001, 0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                               0.0,    0.0,    0.0,    0.0,    0.0,    0.001, 0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0005, 0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0005, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.001, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0002, 0.0,    0.0,    0.0,    0.0,    0.0,
+                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0002, 0.0,    0.0,    0.0,    0.0,
+                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0005, 0.0,    0.0,    0.0,
+                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0002, 0.0,    0.0,
+                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0002, 0.0,
+                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0005]
+
+# #     ############################
+# #     # (Optional) Initial State/Covar (set if needed)
+# #     ############################
+# #     # initial_estimate_covariance: [ ... 15x15 ... ]
+
+
+# ekf_imu_node: #this file is for VO+IMU used for 2D lidar mapping
+#   ros__parameters:
+#     frequency: 30.0
+#     sensor_timeout: 0.5
+#     two_d_mode: true
+#     publish_tf: true
+#     publish_acceleration: false
+#     imu0_remove_gravitational_acceleration: true
     
-    # Process noise (tuned for IMU + visual odometry)
-    process_noise_covariance: [0.005, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
-                               0.0,    0.005, 0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
-                               0.0,    0.0,    0.006, 0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
-                               0.0,    0.0,    0.0,    0.003, 0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
-                               0.0,    0.0,    0.0,    0.0,    0.003, 0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
-                               0.0,    0.0,    0.0,    0.0,    0.0,    0.006, 0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
-                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0025, 0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
-                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0025, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
-                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.004, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
-                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.001, 0.0,    0.0,    0.0,    0.0,    0.0,
-                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.001, 0.0,    0.0,    0.0,    0.0,
-                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.002, 0.0,    0.0,    0.0,
-                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.001, 0.0,    0.0,
-                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.001, 0.0,
-                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0015]
+#     # IMU sensor configuration
+#     imu0: /camera/gyro_accel/sample
+#     # imu0_config: [false, false, false,    # x, y, z position
+#     #               false, false, true,     # roll, pitch, yaw orientation
+#     #               false, false, false,    # x, y, z velocity
+#     #               false, false, true,     # roll, pitch, yaw velocity
+#     #               true,  true,  false]    # x, y, z acceleration
+#     # imu0_config: [false, false, false,
+#     #               true,  true,  true,
+#     #               false, false, false,
+#     #               true,  true,  true,
+#     #               false, false, false]
+#     #                x     y     z     roll  pitch yaw    vx    vy    vz    vroll vpitch vyaw   ax    ay    az
+#     imu0_config:   [false,false,false, false,false,true, false,false,false, false,false,true,  false,false,false]
+#     predict_to_current_time: false
+#     smooth_lagged_data: true
+#     reset_on_time_jump: true
+
+#     imu0_differential: false
+#     imu0_relative: false
+#     imu0_queue_size: 10
+    
+#     # Visual odometry configuration
+#     odom0: /rtabmap/odom
+#     odom0_config: [true,  true,  false,   # x, y, z position
+#                    false, false, true,    # roll, pitch, yaw orientation  
+#                    true,  true,  false,   # x, y, z velocity
+#                    false, false, true,    # roll, pitch, yaw velocity
+#                    false, false, false]   # x, y, z acceleration
+  
+
+#     odom0_differential: false
+#     odom0_relative: false
+#     odom0_queue_size: 10
+    
+#     # Frame configuration
+#     map_frame: map
+#     odom_frame: odom
+#     base_link_frame: base_link
+#     world_frame: odom
+    
+#     # Process noise (tuned for IMU + visual odometry)
+#     process_noise_covariance: [0.001, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+#                                0.0,    0.001, 0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+#                                0.0,    0.0,    0.001, 0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+#                                0.0,    0.0,    0.0,    0.001, 0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+#                                0.0,    0.0,    0.0,    0.0,    0.001, 0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+#                                0.0,    0.0,    0.0,    0.0,    0.0,    0.001, 0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+#                                0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0005, 0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+#                                0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0005, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+#                                0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.001, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+#                                0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0002, 0.0,    0.0,    0.0,    0.0,    0.0,
+#                                0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0002, 0.0,    0.0,    0.0,    0.0,
+#                                0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0005, 0.0,    0.0,    0.0,
+#                                0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0002, 0.0,    0.0,
+#                                0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0002, 0.0,
+#                                0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0005]

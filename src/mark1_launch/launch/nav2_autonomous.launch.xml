@@ -13,6 +13,7 @@
 
     <!-- Define path variables -->
     <let name="urdf_path" value="$(find-pkg-share mark1_description)/urdf/my_robot.urdf.xacro"/>
+    <let name="rviz_config" value="/mnt/ssd/dev/sensors_ws/src/mark1_launch/config/rviz_default.rviz"/>
     
     <!-- Start robot_state_publisher -->
     <node pkg="robot_state_publisher" exec="robot_state_publisher" name="robot_state_publisher">
@@ -124,9 +125,10 @@
     <!-- Motor driver commands will be logged but not sent to hardware -->
 
     <!-- RViz for visualization -->
-    <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen">
+    <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(var rviz_config)">
         <param name="use_sim_time" value="$(var use_sim_time)"/>
-        <param name="rviz_config_file" value="$(find-pkg-share nav2_bringup)/rviz/nav2_default_view.rviz"/>
+        <!-- <param name="rviz_config_file" value="$(find-pkg-share mark1_launch)/config/rviz_default.rviz"/> -->
+        <!-- <param name="rviz_config_file" value="$(var rviz_config)"/> -->
     </node>
 
 </launch>

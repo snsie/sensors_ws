@@ -18,8 +18,10 @@ amcl:
     laser_min_range: -1.0
     laser_model_type: "likelihood_field"
     max_beams: 60
-    max_particles: 2000
-    min_particles: 500
+    # max_particles: 2000
+    # min_particles: 500
+    max_particles: 8000
+    min_particles: 2000
     odom_frame_id: "odom"
     pf_err: 0.05
     pf_z: 0.99
@@ -101,7 +103,7 @@ bt_navigator:
 controller_server:
   ros__parameters:
     use_sim_time: False
-    controller_frequency: 20.0
+    controller_frequency: 10.0
     min_x_velocity_threshold: 0.001
     min_y_velocity_threshold: 0.5
     min_theta_velocity_threshold: 0.001
@@ -132,11 +134,13 @@ controller_server:
       debug_trajectory_details: True
       min_vel_x: 0.0
       min_vel_y: 0.0
-      max_vel_x: 0.26
+      # max_vel_x: 0.26
+      max_vel_x: 0.8
       max_vel_y: 0.0
       max_vel_theta: 1.0
       min_speed_xy: 0.0
-      max_speed_xy: 0.26
+      # max_speed_xy: 0.26
+      max_speed_xy: 0.8
       min_speed_theta: 0.0
       # Add high threshold to disable backward motion
       acc_lim_x: 2.5
@@ -181,7 +185,8 @@ local_costmap:
       width: 3
       height: 3
       resolution: 0.05
-      robot_radius: 0.22
+      # robot_radius: 0.22
+      footprint: "[[0.325,0.35],[0.325,-0.35],[-0.325,-0.35],[-0.325,0.35]]"
       plugins: ["obstacle_layer", "inflation_layer"]
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
@@ -203,7 +208,7 @@ local_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
-        inflation_radius: 0.55
+        inflation_radius: 0.35
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: True
@@ -242,7 +247,7 @@ global_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
-        inflation_radius: 0.55
+        inflation_radius: 0.35
       always_send_full_costmap: True
 
 map_server:
@@ -260,7 +265,8 @@ map_saver:
 
 planner_server:
   ros__parameters:
-    expected_planner_frequency: 20.0
+    expected_planner_frequency: 10.0
+    planner_frequency: 5.0  # Reduce from 20.0
     use_sim_time: False
     planner_plugins: ["GridBased"]
     GridBased:
@@ -325,8 +331,10 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
-    max_velocity: [0.26, 0.0, 1.0]
-    min_velocity: [-0.26, 0.0, -1.0]
+    # max_velocity: [0.26, 0.0, 1.0]
+    # min_velocity: [-0.26, 0.0, -1.0]
+    max_velocity: [0.6, 0.0, 1.0]
+    min_velocity: [-0.6, 0.0, -1.0]
     max_accel: [2.5, 0.0, 3.2]
     max_decel: [-2.5, 0.0, -3.2]
     odom_topic: "/odometry/filtered"

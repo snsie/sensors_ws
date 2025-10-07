@@ -67,12 +67,15 @@ tmux split-window -v -t "$SESSION_NAME:0" \
   "bash -lc '$(launch_cmd lidar "ros2 launch orbbec_lidar_ros2 single_line.launch.py")'"
 
 # Split to third pane (visual odometry)
-tmux split-window -v -t "$SESSION_NAME:0" \
-  "bash -lc '$(launch_cmd visual_odom "ros2 launch mark1_launch visual_odometry.launch.xml")'"
+# tmux split-window -v -t "$SESSION_NAME:0" \
+#   "bash -lc '$(launch_cmd visual_odom "ros2 launch mark1_launch visual_odometry.launch.xml")'"
 
 # Split to fourth pane (slam + ekf + robot state)
+# tmux split-window -v -t "$SESSION_NAME:0" \
+#   "bash -lc '$(launch_cmd slam "ros2 launch mark1_launch imu_lidar_slam.launch.xml")'"
+
 tmux split-window -v -t "$SESSION_NAME:0" \
-  "bash -lc '$(launch_cmd slam "ros2 launch mark1_launch imu_lidar_slam.launch.xml")'"
+   "bash -lc '$(launch_cmd slam "ros2 launch mark1_launch nav2_autonomous.launch.xml")'"
 
 # Split to fifth pane (empty, but sourced)
 # tmux split-window -v -t "$SESSION_NAME:0" \
