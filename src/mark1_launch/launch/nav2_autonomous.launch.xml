@@ -47,7 +47,7 @@
     <!-- RTABMap Visual Odometry to provide odom frame -->
     <include file="$(find-pkg-share rtabmap_launch)/launch/rtabmap.launch.py">
         <!-- General parameters -->
-        <arg name="frame_id" value="base_link"/>
+        <arg name="frame_id" value="base_footprint"/>
         
         <!-- RGB-D settings -->
         <arg name="rgb_topic" value="/camera/color/image_raw"/>
@@ -76,8 +76,9 @@
         <arg name="tf_delay" value="0.0"/> <!-- long to wait before publishing the tf-->
         <arg name="use_action_for_goal" value="true"/>
         
-        <!-- Disable SLAM mapping since you already have a map -->
-        <arg name="rtabmap_args" value="--Mem/IncrementalMemory false --Mem/InitWMWithAllNodes true"/>
+        <!-- Disable SLAM mapping since you are using visual odometry only -->
+        <!--ocotber 7: will set the incremental memory true for mapping-->
+        <arg name="rtabmap_args" value="--delete_db_on_start --Mem/IncrementalMemory false"/>
 
         <!-- dont publish any tf as we will be using EKF (fusion of Visual odometry and IMU) to publish the odom tf -->
         <arg name="publish_tf" value="false"/>
